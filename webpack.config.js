@@ -1,8 +1,14 @@
 const TerserPlugin = require("terser-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const path = require("path");
-const isPolyfillNeeded = process.env.POLYFILL === "true";
 
 module.exports = (env) => {
+  const mode = env.NODE_ENV;
+  console.log("mode", mode);
+  const isPolyfillNeeded = env.POLYFILL;
+  const isProduction = mode === "production";
+  console.log("isPolyfillNeeded", isPolyfillNeeded);
   return {
     entry: isPolyfillNeeded
       ? ["core-js/stable", "regenerator-runtime/runtime", "./src/index.js"]
@@ -13,6 +19,13 @@ module.exports = (env) => {
     },
     module: {
       rules: [
+        {
+          test: /\.css$/,
+          use: [
+            isProduction ? MiniCssExtractPlugin.loader : "style-loader",
+            "css-loader",
+          ],
+        },
         {
           test: /\.js$/,
           loader: "esbuild-loader",
@@ -32,8 +45,16 @@ module.exports = (env) => {
         }),
       ],
     },
+    plugins: [
+      new HtmlWebpackPlugin({
+        template: "public/index.html",
+      }),
+      new MiniCssExtractPlugin({
+        filename: "[name].css", // 최종 번들 CSS 파일 이름
+      }),
+    ],
 
-    mode: "production", // 트리 쉐이킹 활성화
+    mode: mode, // 트리 쉐이킹 활성화
     devtool: "source-map", // 소스맵 추가
   };
 };
